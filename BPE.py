@@ -65,7 +65,7 @@ def merge_pair(pair, corpus):
 
 def bpe(corpus, k, vocab):
     """Use BPE to encode corpus and generate vocab"""
-    for _ in range(k):
+    for i in range(k):
         pair_freq = find_pair_frequencies(corpus)
         if not pair_freq:
             break
@@ -75,7 +75,7 @@ def bpe(corpus, k, vocab):
         vocab.append(new_token)
         corpus = merge_pair(most_common_pair, corpus)
 
-        print(f"Merge {most_common_pair} -> {''.join(most_common_pair)}")
+        print(f"Merge {i+1} {most_common_pair} -> {''.join(most_common_pair)}")
 
     return corpus, vocab
 
@@ -114,14 +114,15 @@ def main():
     # grab arguments
     sep = sys.argv[1]
     k = int(sys.argv[2])
+    test_num = int(sys.argv[3])
 
     # grab input text
-    with open("input/test1.txt") as file:
+    with open(f"input/test{test_num}.txt") as file:
         text = file.read().rstrip()
 
     # parse text
     corpus, vocab = parser(text, sep)  # type: ignore
-    print("Initial Corpus")
+    print("\nInitial Corpus")
     for word, freq in corpus:  # type: ignore
         print(f"{freq} {' '.join(word)}")
     print(f"Initial vocab: {vocab}\n")
@@ -135,19 +136,21 @@ def main():
     print(f"Final vocab: {vocab}\n")
 
     # Tokenization example
-    with open("input/test1_s.txt") as file:
+    with open(f"input/test{test_num}_s.txt") as file:
         text = file.read().rstrip()
 
-    print(text)
+    print("=== Tokenization example ===")
 
     # parse sample text
     sample_words = parser(text, sep, type=1)
-    print(f"Inital sample text: {sample_words} \n")
+    print("\nInitial sample text")
+    for word in sample_words:
+        print(word)
 
     # tokenize
     tokens = tokenization(sample_words, vocab)
 
-    print(f"Tokenized output: {tokens}")
+    print(f"\nTokenized output: {tokens}")
 
 
 if __name__ == "__main__":
