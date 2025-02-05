@@ -6,19 +6,24 @@ def parser(text: str, sep: str, type=0):
     if not text:
         raise ValueError("No text provided for parser")
 
-    # grab tokens
-    tokens = ["_"] + list(set(text.rstrip()))
-    tokens.remove(" ")
+    if type == 0:
+        # parse text into list
+        words = text.rstrip().split(sep)
 
-    # parse text into list
-    words = text.rstrip().split(sep)
+        word_count = Counter(words)
 
-    word_count = Counter(words)
+        corpus = [(list(word) + ["_"], freq) for word, freq in word_count.items()]
 
-    corpus = [(list(word) + ["_"], freq) for word, freq in word_count.items()]
+        print("Parse corpus successfully!")
 
-    print("Parse corpus successfully!")
-    return corpus, tokens
+        # grab tokens
+        tokens = ["_"] + list(set(text.rstrip()))
+        tokens.remove(" ")
+
+        return corpus, tokens
+
+    else:
+        return text.rstrip().split(sep)
 
 
 def find_pair_frequencies(corpus):
@@ -58,7 +63,8 @@ def merge_pair(pair, corpus):
     return new_corpus
 
 
-def bpe(corpus, k, tokens: list):
+def bpe(corpus, k, vocab):
+    """Use BPE to encode corpus and generate vocab"""
     for _ in range(k):
         pair_freq = find_pair_frequencies(corpus)
         if not pair_freq:
@@ -66,57 +72,82 @@ def bpe(corpus, k, tokens: list):
 
         most_common_pair = max(pair_freq, key=pair_freq.get)  # type: ignore
         new_token = "".join(most_common_pair)
-        tokens.append(new_token)
+        vocab.append(new_token)
         corpus = merge_pair(most_common_pair, corpus)
 
         print(f"Merge {most_common_pair} -> {''.join(most_common_pair)}")
 
-    return corpus, tokens
+    return corpus, vocab
+
+
+def tokenization(words, tokens):
+    """Tokenizes input text based on the learned BPE tokens"""
+
+    tokenized_text = []
+
+    for word in words:
+        chars = list(word) + ["_"]
+
+        i = 0
+        while i < len(chars):
+            best_match = None
+            longest_match = 1
+
+            # Find longest match
+            for j in range(i + 1, len(chars) + 1):
+                temp = "".join(chars[i:j])  # type: ignore
+                if temp in tokens:
+                    best_match = temp
+                    longest_match = j - i
+
+            if best_match:
+                tokenized_text.append(best_match)
+                i += longest_match
+            else:
+                tokenized_text.append(chars[i])
+                i += 1
+
+    return tokenized_text
 
 
 def main():
-    # grab text
-    if len(sys.argv) != 3:
-        raise ValueError("Missing delinimeter and number of merges ")
-
+    # grab arguments
     sep = sys.argv[1]
     k = int(sys.argv[2])
 
-    # try:
-    #     sep = sys.argv[1]
-    #     print("Separator recieved...")
-    # except Exception as e:
-    #     print(f"Error reading stdin: {e}")
-
-    try:
-        # Try reading from stdin
-        text = sys.stdin.read()
-        print("Received text from stdin...")
-        print(text)
-    except Exception as e:
-        print(f"Error reading stdin: {e}")
-    # with open("text/test1.txt") as file:
-    #     text = file.read().rstrip()
+    # grab input text
+    with open("input/test1.txt") as file:
+        text = file.read().rstrip()
 
     # parse text
-    corpus, tokens = parser(text, sep)  # type: ignore
+    corpus, vocab = parser(text, sep)  # type: ignore
     print("Initial Corpus")
-    for word, freq in corpus:
+    for word, freq in corpus:  # type: ignore
         print(f"{freq} {' '.join(word)}")
-    print(f"Initial tokens: {tokens}\n")
+    print(f"Initial vocab: {vocab}\n")
 
-    corpus, tokens = bpe(corpus, k, tokens)
+    # Encode the corpus
+    corpus, vocab = bpe(corpus, k, vocab)
 
     print("\nFinal Corpus")
-    for word, freq in corpus:
+    for word, freq in corpus:  # type: ignore
         print(f"{freq} {' '.join(word)}")
-    print(f"Final tokens: {tokens}\n")
+    print(f"Final vocab: {vocab}\n")
 
-    applyBPE = input("Apply the tokenizer? [Y/n]")
-    if applyBPE.upper() == "Y":
-        print("apply")
-    else:
-        print("End")
+    # Tokenization example
+    with open("input/test1_s.txt") as file:
+        text = file.read().rstrip()
+
+    print(text)
+
+    # parse sample text
+    sample_words = parser(text, sep, type=1)
+    print(f"Inital sample text: {sample_words} \n")
+
+    # tokenize
+    tokens = tokenization(sample_words, vocab)
+
+    print(f"Tokenized output: {tokens}")
 
 
 if __name__ == "__main__":
