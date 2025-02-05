@@ -80,8 +80,6 @@ def bpe(corpus, k, vocab):
 
     # Perform k merges
     for i in range(k):
-        print(f"==Merge {i + 1}")
-
         # Find most frequent pair of tokens
         pair_freq = find_pair_frequencies(corpus)
 
@@ -96,13 +94,13 @@ def bpe(corpus, k, vocab):
         # merge the pair and update corpus
         corpus = merge_pair(most_common_pair, corpus)
 
-        print(f"   Merge {i + 1} {most_common_pair} -> {''.join(most_common_pair)}")
+        print(f"==Merge {i + 1} {most_common_pair} -> {''.join(most_common_pair)}")
+        if __debug__:
+            print("    Corpus")
+            for word, freq in corpus:  # type: ignore
+                print(f"     {freq} {' '.join(word)}")
 
-        print("    Corpus")
-        for word, freq in corpus:  # type: ignore
-            print(f"     {freq} {' '.join(word)}")
-
-        print(f"   Vocab: {vocab}")
+            print(f"   Vocab: {vocab}")
 
     return corpus, vocab
 
@@ -168,10 +166,6 @@ def main():
         print(f"{freq} {' '.join(word)}")
     print(f"Final vocab: {vocab}\n")
 
-    # Check if we to demonstrate tokenization
-    # if len(sys.argv) == 4:
-    #     sys.exit(0)
-    #
     test = input("Tokeniation Demonstration?[Y/n] ")
     if test.upper() != "Y":
         sys.exit(0)
