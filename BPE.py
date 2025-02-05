@@ -23,7 +23,9 @@ def parser(text: str, sep: str, type=0):
         return corpus, tokens
 
     else:
-        return text.rstrip().split(sep)
+        words = text.rstrip().split(sep)
+        words = [list(word) + ["_"] for word in words]
+        return words
 
 
 def find_pair_frequencies(corpus):
@@ -65,46 +67,64 @@ def merge_pair(pair, corpus):
 
 def bpe(corpus, k, vocab):
     """Use BPE to encode corpus and generate vocab"""
+
+    # Perform k merges
     for i in range(k):
+        print(f"==Merge {i+1}")
+
+        # Find most frequent pair of tokens
         pair_freq = find_pair_frequencies(corpus)
+
+        # If no more pair exist, we are done
         if not pair_freq:
             break
 
         most_common_pair = max(pair_freq, key=pair_freq.get)  # type: ignore
         new_token = "".join(most_common_pair)
         vocab.append(new_token)
+
+        # merge the pair and update corpus
         corpus = merge_pair(most_common_pair, corpus)
 
-        print(f"Merge {i+1} {most_common_pair} -> {''.join(most_common_pair)}")
+        print(f"   Merge {i+1} {most_common_pair} -> {''.join(most_common_pair)}")
+
+        print("    Corpus")
+        for word, freq in corpus:  # type: ignore
+            print(f"     {freq} {' '.join(word)}")
+
+        print(f"   Vocab: {vocab}")
 
     return corpus, vocab
 
 
-def tokenization(words, tokens):
+def tokenization(words, vocab):
     """Tokenizes input text based on the learned BPE tokens"""
 
     tokenized_text = []
 
+    # Loop through each word and tokenize it
     for word in words:
-        chars = list(word) + ["_"]
-
         i = 0
-        while i < len(chars):
+        while i < len(word):
             best_match = None
             longest_match = 1
 
             # Find longest match
-            for j in range(i + 1, len(chars) + 1):
-                temp = "".join(chars[i:j])  # type: ignore
-                if temp in tokens:
-                    best_match = temp
+            # Basically matching i to j character inside word
+            # If that subset of word exist in the vocab then update best_match
+            for j in range(i + 1, len(word) + 1):
+                token = "".join(word[i:j])  # type: ignore
+                if token in vocab:
+                    best_match = token
                     longest_match = j - i
 
+            # Append best match if exist, else append the current character.
+            # Tokenize the character if we don't know what it is
             if best_match:
                 tokenized_text.append(best_match)
                 i += longest_match
             else:
-                tokenized_text.append(chars[i])
+                tokenized_text.append(word[i])
                 i += 1
 
     return tokenized_text
@@ -122,7 +142,9 @@ def main():
 
     # parse text
     corpus, vocab = parser(text, sep)  # type: ignore
+
     print("\nInitial Corpus")
+
     for word, freq in corpus:  # type: ignore
         print(f"{freq} {' '.join(word)}")
     print(f"Initial vocab: {vocab}\n")
@@ -131,9 +153,14 @@ def main():
     corpus, vocab = bpe(corpus, k, vocab)
 
     print("\nFinal Corpus")
+
     for word, freq in corpus:  # type: ignore
         print(f"{freq} {' '.join(word)}")
     print(f"Final vocab: {vocab}\n")
+
+    # Check if we to demonstrate tokenization
+    if len(sys.argv) == 4:
+        sys.exit(0)
 
     # Tokenization example
     with open(f"input/test{test_num}_s.txt") as file:
@@ -143,9 +170,11 @@ def main():
 
     # parse sample text
     sample_words = parser(text, sep, type=1)
+
     print("\nInitial sample text")
+
     for word in sample_words:
-        print(word)
+        print(f"{' '.join(word)}")  # type: ignore
 
     # tokenize
     tokens = tokenization(sample_words, vocab)
