@@ -1,5 +1,6 @@
 import sys
 from collections import Counter
+from termcolor import colored
 
 
 def parser(text: str, sep: str, type=0):
@@ -65,12 +66,21 @@ def merge_pair(pair, corpus):
     return new_corpus
 
 
+def print_colored_tokens(tokens):
+    colors = ["red", "green", "yellow", "blue", "magenta", "cyan", "white"]
+
+    for i, token in enumerate(tokens):
+        print(colored(token, colors[i % len(colors)]), end=" ")  # type: ignore
+
+    print()  # Newline at the end
+
+
 def bpe(corpus, k, vocab):
     """Use BPE to encode corpus and generate vocab"""
 
     # Perform k merges
     for i in range(k):
-        print(f"==Merge {i+1}")
+        print(f"==Merge {i + 1}")
 
         # Find most frequent pair of tokens
         pair_freq = find_pair_frequencies(corpus)
@@ -86,7 +96,7 @@ def bpe(corpus, k, vocab):
         # merge the pair and update corpus
         corpus = merge_pair(most_common_pair, corpus)
 
-        print(f"   Merge {i+1} {most_common_pair} -> {''.join(most_common_pair)}")
+        print(f"   Merge {i + 1} {most_common_pair} -> {''.join(most_common_pair)}")
 
         print("    Corpus")
         for word, freq in corpus:  # type: ignore
@@ -159,19 +169,25 @@ def main():
     print(f"Final vocab: {vocab}\n")
 
     # Check if we to demonstrate tokenization
-    if len(sys.argv) == 4:
+    # if len(sys.argv) == 4:
+    #     sys.exit(0)
+    #
+    test = input("Tokeniation Demonstration?[Y/n] ")
+    if test.upper() != "Y":
         sys.exit(0)
 
     # Tokenization example
     with open(f"input/test{test_num}_s.txt") as file:
         text = file.read().rstrip()
 
-    print("=== Tokenization example ===")
+    print("\n=== Tokenization example ===\n")
+
+    print(f"Known Vocabulary: {vocab}\n")
 
     # parse sample text
     sample_words = parser(text, sep, type=1)
 
-    print("\nInitial sample text")
+    print("Initial sample text")
 
     for word in sample_words:
         print(f"{' '.join(word)}")  # type: ignore
@@ -179,7 +195,8 @@ def main():
     # tokenize
     tokens = tokenization(sample_words, vocab)
 
-    print(f"\nTokenized output: {tokens}")
+    print("Tokenized output:")
+    print_colored_tokens(tokens)
 
 
 if __name__ == "__main__":
